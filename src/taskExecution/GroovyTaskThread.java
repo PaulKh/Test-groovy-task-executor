@@ -1,4 +1,6 @@
-import model.Task;
+package taskExecution;
+
+import model.DatabaseHandler;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -13,14 +15,14 @@ import java.util.List;
 /**
  * Created by Paul on 14/08/15.
  */
-public class GroovyTaskExecutor implements Runnable{
-
-    public GroovyTaskExecutor(String script) {
+public class GroovyTaskThread implements Runnable{
+    private String script;
+    public GroovyTaskThread(String script) {
+        this.script = script;
     }
     public void addTask(String script){
-        DatabaseHandler.getInstance().addNewTask(script);
         try {
-            invokeScript("groovy", "println 'Hello, Groovy!';", System.getenv("GROOVY_HOME") + "/lib");
+            invokeScript("groovy", script, System.getenv("GROOVY_HOME") + "/lib");
         } catch (ScriptException e) {
             e.printStackTrace();
         }
@@ -44,6 +46,7 @@ public class GroovyTaskExecutor implements Runnable{
                         + name);
             }
             Object result = engine.eval(script);
+            result.toString();
         } finally {
             Thread.currentThread().setContextClassLoader(
                     oldLoader);
@@ -72,6 +75,6 @@ public class GroovyTaskExecutor implements Runnable{
 
     @Override
     public void run() {
-
+        addTask(script);
     }
 }

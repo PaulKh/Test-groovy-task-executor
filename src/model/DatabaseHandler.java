@@ -1,6 +1,5 @@
-import model.Task;
+package model;
 
-import java.net.UnknownHostException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +36,8 @@ public class DatabaseHandler {
             String sql = "CREATE TABLE IF NOT EXISTS TASK " +
                     " (ID INTEGER PRIMARY KEY     NOT NULL," +
                     " GROOVY_SCRIPT           TEXT    NOT NULL," +
-                    " RESULT            TEXT     NOT NULL) ";
+                    " RESULT            TEXT, " +
+                    "STATUS INTEGER NOT NULL)";
             stmt.executeUpdate(sql);
             stmt.close();
             return connection;
@@ -60,8 +60,10 @@ public class DatabaseHandler {
                 Integer identifier = rs.getInt("ID");
                 String taskResult = rs.getString("RESULT");
                 String script = rs.getString("GROOVY_SCRIPT");
+                Integer status = rs.getInt("STATUS");
                 Task task = new Task(identifier, script);
                 task.setResult(taskResult);
+                task.setTaskStatus(TaskStatus.getStatusByInt(status));
 //                task.setIsExecuted(isExecuted == 0 ? false : true);
                 tasks.add(task);
             }
@@ -73,16 +75,43 @@ public class DatabaseHandler {
         return tasks;
     }
 
-    public void addNewTask(String script) {
-        String sql = "INSERT INTO TASK (GROOVY_SCRIPT,RESULT) " +
-                "VALUES (\"" + script + "\", \"" + defaultResult + "\");";
-        executeStatement(sql);
-    }
+    public int addNewTask(String script) {
+        String sql = "INSERT INTO TASK (GROOVY_SCRIPT, STATUS) " +
+                "VALUES (\"" + script + "\"," + 0 + ");";
+        PreparedStatement pstmt;
+        int key = -1;
+        try {
+            pstmt = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
-    public void updateTable(int identifier, String result){
+            pstmt.executeUpdate();
+            ResultSet keys = pstmt.getGeneratedKeys();
+
+            if(keys.next())
+                key = keys.getInt(1);
+            keys.close();
+            pstmt.close();
+        } catch (Exception e) { e.printStackTrace(); }
+        return key;
+
+    }
+    public DatabaseRequestStatus deleteTask(int identifier){
+        String sql = "DELETE FROM TASK WHERE ID = "+ identifier + ";";
+        return executeStatement(sql);
+    }
+    public DatabaseRequestStatus updateTask(int identifier, String result){
         String sql = "UPDATE TASK SET RESULT = \"" +
                 result + "\" WHERE ID = "+ identifier + ";";
-        executeStatement(sql);
+        return executeStatement(sql);
+    }
+    public DatabaseRequestStatus updateTask(int identifier, TaskStatus status){
+        String sql = "UPDATE TASK SET STATUS = " +
+                status.ordinal() + " WHERE ID = "+ identifier + ";";
+        return executeStatement(sql);
+    }
+    public DatabaseRequestStatus updateTask(int identifier, String result, TaskStatus status){
+        String sql = "UPDATE TASK SET RESULT = \"" +
+                result + "\", STATUS = " + status.ordinal() + " WHERE ID = "+ identifier + ";";
+        return executeStatement(sql);
     }
     public Task getTaskById(int identifier){
         Connection connection = getConnection();
@@ -96,8 +125,10 @@ public class DatabaseHandler {
             if (rs.next()) {
                 String taskResult = rs.getString("RESULT");
                 String script = rs.getString("GROOVY_SCRIPT");
+                Integer status = rs.getInt("STATUS");
                 task = new Task(identifier, script);
                 task.setResult(taskResult);
+                task.setTaskStatus(TaskStatus.getStatusByInt(status));
             }
             rs.close();
             stmt.close();
@@ -105,16 +136,18 @@ public class DatabaseHandler {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return null;
     }
-    private void executeStatement(String sql){
+    private DatabaseRequestStatus executeStatement(String sql){
         Connection connection = getConnection();
         Statement stmt = null;
         try {
             stmt = connection.createStatement();
             stmt.executeUpdate(sql);
-
+            return DatabaseRequestStatus.SUCCESS;
         } catch (SQLException e) {
             e.printStackTrace();
+            return DatabaseRequestStatus.ERROR;
         }
     }
 

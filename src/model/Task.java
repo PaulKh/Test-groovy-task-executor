@@ -8,7 +8,7 @@ import java.io.Serializable;
 public class Task implements Serializable{
     private int identifier;
     private String script;
-    private boolean isExecuted;
+    private TaskStatus taskStatus = TaskStatus.EXECUTING;
     private String result;
 
     public Task(int identifier, String script) {
@@ -32,12 +32,12 @@ public class Task implements Serializable{
         this.script = script;
     }
 
-    public boolean isExecuted() {
-        return isExecuted;
+    public TaskStatus getTaskStatus() {
+        return taskStatus;
     }
 
-    public void setIsExecuted(boolean isExecuted) {
-        this.isExecuted = isExecuted;
+    public void setTaskStatus(TaskStatus taskStatus) {
+        this.taskStatus = taskStatus;
     }
 
     public String getResult() {

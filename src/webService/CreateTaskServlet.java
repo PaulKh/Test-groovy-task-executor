@@ -1,4 +1,7 @@
+package webService;
+
 import com.google.gson.Gson;
+import model.DatabaseHandler;
 import model.Task;
 
 import javax.servlet.ServletException;
@@ -16,7 +19,10 @@ public class CreateTaskServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        Task ping = new Gson().fromJson(readPostData(request), Task.class);
+        Task task = new Gson().fromJson(readPostData(request), Task.class);
+        if (task.getScript() != null){
+            DatabaseHandler.getInstance().addNewTask(task.getScript());
+        }
         response.getWriter().println("{\"success\":\"OK\"}");
     }
     private String readPostData(HttpServletRequest request) {
