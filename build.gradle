@@ -20,5 +20,6 @@ dependencies {
     compile 'org.eclipse.jetty:jetty-servlet:9.0.0.RC2'
     compile 'org.eclipse.jetty:jetty-server:9.0.0.RC2'
     compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    compile files('libs/sqlite-connection-pool_v1.1.0.jar')
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }

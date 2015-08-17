@@ -15,8 +15,7 @@ import java.util.concurrent.*;
 public class TaskExecutionHelper implements ExecutionTaskCallback {
     private static TaskExecutionHelper helper;
     private ThreadPoolExecutor executorPool;
-    private Map<Integer, GroovyTaskThread> tasks = new HashMap<>();
-    private Map<Integer, Future> futures = new HashMap<>();
+    private Map<Integer, GroovyFutureTask> tasks = new HashMap<>();
 
     public static TaskExecutionHelper getInstance() {
         TaskExecutionHelper local = helper;
@@ -31,23 +30,25 @@ public class TaskExecutionHelper implements ExecutionTaskCallback {
         }
         return local;
     }
-
+    //Init thread pool
     public TaskExecutionHelper() {
         RejectedExecutionHandlerImpl rejectionHandler = new RejectedExecutionHandlerImpl();
         ThreadFactory threadFactory = Executors.defaultThreadFactory();
-        executorPool = new ThreadPoolExecutor(2, 4, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100), threadFactory, rejectionHandler);
+        executorPool = new ThreadPoolExecutor(2, 4, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(10), threadFactory, rejectionHandler);
     }
-
+    //put task in the list and in the queue of the pool
     public void addTask(Task task) {
-        GroovyTaskThread taskThread = new GroovyTaskThread(task);
-        tasks.put(task.getIdentifier(), taskThread);
-        executorPool.submit(taskThread);
+        GroovyTaskThread taskThread = new GroovyTaskThread(this, task);
+        GroovyFutureTask futureTask = new GroovyFutureTask<>(taskThread, null);
+        tasks.put(task.getIdentifier(), futureTask);
+        executorPool.execute(futureTask);
     }
 
     public void shutdown() {
         executorPool.shutdownNow();
     }
 
+    //This method checks if task is executing or already executed in the database or failed
     public Task getTaskStatusAndResult(int identifier) {
         Task returnTask = new Task();
         Task taskFromDB = DatabaseHandler.getInstance().getTaskById(identifier);
@@ -56,7 +57,7 @@ public class TaskExecutionHelper implements ExecutionTaskCallback {
         } else {
             switch (taskFromDB.getTaskStatus()) {
                 case EXECUTING: {
-                    GroovyTaskThread executingThread = tasks.get(identifier);
+                    GroovyTaskThread executingThread = tasks.get(identifier).getGroovyThread();
                     if (executingThread == null) {
                         returnTask.setTaskStatus(TaskStatus.FAILED);
                     } else returnTask.setTaskStatus(TaskStatus.EXECUTING);
@@ -75,14 +76,14 @@ public class TaskExecutionHelper implements ExecutionTaskCallback {
     }
 
     public void stopTask(int identifier) {
-        Future future = futures.get(identifier);
+        Future future = tasks.get(identifier);
         if (future != null)
             future.cancel(false);
     }
 
+    //Remove task from the list after finishing the execution
     @Override
     public synchronized void taskExecuted(Task task) {
-        futures.remove(task.getIdentifier());
         tasks.remove(task.getIdentifier());
     }
 
@@ -90,10 +91,13 @@ public class TaskExecutionHelper implements ExecutionTaskCallback {
     public void updateStatusOfTasks(List<Task> tasks) {
         for (Task task : tasks) {
             if (task.getTaskStatus() == TaskStatus.EXECUTING) {
-                GroovyTaskThread thread = this.tasks.get(task.getIdentifier());
-                if (thread == null) {
-                    task.setTaskStatus(TaskStatus.FAILED);
-                    DatabaseHandler.getInstance().updateTask(task);
+                GroovyFutureTask futureTask = this.tasks.get(task.getIdentifier());
+                if (futureTask != null) {
+                    GroovyTaskThread thread = futureTask.getGroovyThread();
+                    if (thread == null) {
+                        task.setTaskStatus(TaskStatus.FAILED);
+                        DatabaseHandler.getInstance().updateTask(task);
+                    }
                 }
             }
         }

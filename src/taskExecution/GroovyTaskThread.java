@@ -18,13 +18,16 @@ import java.util.List;
  * Created by Paul on 14/08/15.
  */
 public class GroovyTaskThread implements Runnable {
-
+    private ExecutionTaskCallback callback;
     private Task task;
 
-    public GroovyTaskThread(Task task) {
+    public GroovyTaskThread(ExecutionTaskCallback callback, Task task) {
+        this.callback = callback;
         this.task = task;
     }
 
+    //Run groovy script, save the result to database
+    //Callback says to the manager that task is executed and saved, so we can clean unneeded information
     private void invokeScript(String name, String... directories)
             throws ScriptException {
         ClassLoader loader = new URLClassLoader(
@@ -46,12 +49,15 @@ public class GroovyTaskThread implements Runnable {
                 task.setResult(result.toString());
             task.setTaskStatus(TaskStatus.SUCCEED);
             DatabaseHandler.getInstance().updateTask(task);
+            if (callback != null){
+                callback.taskExecuted(task);
+            }
         } finally {
             Thread.currentThread().setContextClassLoader(
                     oldLoader);
         }
     }
-
+    //support method for script running
     private URL[] buildClassPath(String... directories) {
         try {
             final List<URL> classPath = new ArrayList<URL>();
