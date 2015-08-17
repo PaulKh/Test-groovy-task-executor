@@ -15,7 +15,7 @@ import java.util.concurrent.*;
 public class TaskExecutionHelper implements ExecutionTaskCallback {
     private static TaskExecutionHelper helper;
     private ThreadPoolExecutor executorPool;
-    private Map<Integer, GroovyFutureTask> tasks = new HashMap<>();
+    private Map<Integer, GroovyFutureTask> tasks = new ConcurrentHashMap<>();
 
     public static TaskExecutionHelper getInstance() {
         TaskExecutionHelper local = helper;
@@ -83,7 +83,7 @@ public class TaskExecutionHelper implements ExecutionTaskCallback {
 
     //Remove task from the list after finishing the execution
     @Override
-    public synchronized void taskExecuted(Task task) {
+    public void taskExecuted(Task task) {
         tasks.remove(task.getIdentifier());
     }
 
