@@ -3,6 +3,7 @@ package webService;
 import com.google.gson.Gson;
 import model.DatabaseHandler;
 import model.Task;
+import taskExecution.TaskExecutionHelper;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -14,12 +15,14 @@ import java.util.List;
 /**
  * Created by Paul on 13/08/15.
  */
-public class GetTasksServlet extends HttpServlet{
+public class GetTasksServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
+
         List<Task> tasks = DatabaseHandler.getInstance().getAll();
+        TaskExecutionHelper.getInstance().updateStatusOfTasks(tasks);
         response.getWriter().println(new Gson().toJson(tasks));
     }
 }

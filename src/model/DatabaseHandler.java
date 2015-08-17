@@ -1,5 +1,7 @@
 package model;
 
+import org.sqlite.SQLiteConnectionPoolDataSource;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,12 +14,12 @@ public class DatabaseHandler {
     private static final boolean defaultIsExecuted = false;
     private static final String defaultResult = "";
 
-    public static DatabaseHandler getInstance(){
+    public static DatabaseHandler getInstance() {
         DatabaseHandler local = databaseHandler;
-        if (local == null){
-            synchronized (DatabaseHandler.class){
+        if (local == null) {
+            synchronized (DatabaseHandler.class) {
                 local = databaseHandler;
-                if (local == null){
+                if (local == null) {
                     databaseHandler = new DatabaseHandler();
                     local = databaseHandler;
                 }
@@ -25,12 +27,19 @@ public class DatabaseHandler {
         }
         return local;
     }
+
+    //Approach connection through the pool
     public Connection getConnection() {
+        SQLiteConnectionPoolDataSource dataSource = new SQLiteConnectionPoolDataSource();
+        dataSource.setUrl("jdbc:sqlite:groovy_task_database.db");
+        MiniConnectionPoolManager poolMgr = new MiniConnectionPoolManager(dataSource, 10);
         Connection connection = null;
         Statement stmt = null;
+
         try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:ping_database.db");
+            connection = poolMgr.getConnection();
+//            Class.forName("org.sqlite.JDBC");
+//            connection = DriverManager.getConnection("jdbc:sqlite:ping_database.db");
             System.out.println("Opened database successfully");
             stmt = connection.createStatement();
             String sql = "CREATE TABLE IF NOT EXISTS TASK " +
@@ -39,14 +48,16 @@ public class DatabaseHandler {
                     " RESULT            TEXT, " +
                     "STATUS INTEGER NOT NULL)";
             stmt.executeUpdate(sql);
-            stmt.close();
             return connection;
         } catch (Exception e) {
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
             System.exit(0);
+        } finally {
+            closeStatement(stmt);
         }
         return null;
     }
+
     public List<Task> getAll() {
         List<Task> tasks = new ArrayList<Task>();
         Connection connection = getConnection();
@@ -68,9 +79,11 @@ public class DatabaseHandler {
                 tasks.add(task);
             }
             rs.close();
-            stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            closeStatement(stmt);
+            closeConnection(connection);
         }
         return tasks;
     }
@@ -78,42 +91,47 @@ public class DatabaseHandler {
     public int addNewTask(String script) {
         String sql = "INSERT INTO TASK (GROOVY_SCRIPT, STATUS) " +
                 "VALUES (\"" + script + "\"," + 0 + ");";
-        PreparedStatement pstmt;
+        PreparedStatement pstmt = null;
+        Connection connection = null;
         int key = -1;
         try {
-            pstmt = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            connection = getConnection();
+            pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             pstmt.executeUpdate();
             ResultSet keys = pstmt.getGeneratedKeys();
 
-            if(keys.next())
+            if (keys.next())
                 key = keys.getInt(1);
             keys.close();
-            pstmt.close();
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            closeStatement(pstmt);
+            closeConnection(connection);
+        }
         return key;
 
     }
-    public DatabaseRequestStatus deleteTask(int identifier){
-        String sql = "DELETE FROM TASK WHERE ID = "+ identifier + ";";
+
+    public DatabaseRequestStatus deleteTask(int identifier) {
+        String sql = "DELETE FROM TASK WHERE ID = " + identifier + ";";
         return executeStatement(sql);
     }
-    public DatabaseRequestStatus updateTask(int identifier, String result){
-        String sql = "UPDATE TASK SET RESULT = \"" +
-                result + "\" WHERE ID = "+ identifier + ";";
-        return executeStatement(sql);
+
+    public DatabaseRequestStatus updateTask(Task task) {
+        if (task.getResult() == null) {
+            String sql = "UPDATE TASK SET STATUS = " +
+                    task.getTaskStatus().ordinal() + " WHERE ID = " + task.getIdentifier() + ";";
+            return executeStatement(sql);
+        } else {
+            String sql = "UPDATE TASK SET RESULT = \"" +
+                    task.getResult() + "\", STATUS = " + task.getTaskStatus().ordinal() + " WHERE ID = " + task.getIdentifier() + ";";
+            return executeStatement(sql);
+        }
     }
-    public DatabaseRequestStatus updateTask(int identifier, TaskStatus status){
-        String sql = "UPDATE TASK SET STATUS = " +
-                status.ordinal() + " WHERE ID = "+ identifier + ";";
-        return executeStatement(sql);
-    }
-    public DatabaseRequestStatus updateTask(int identifier, String result, TaskStatus status){
-        String sql = "UPDATE TASK SET RESULT = \"" +
-                result + "\", STATUS = " + status.ordinal() + " WHERE ID = "+ identifier + ";";
-        return executeStatement(sql);
-    }
-    public Task getTaskById(int identifier){
+
+    public Task getTaskById(int identifier) {
         Connection connection = getConnection();
         if (connection == null)
             return null;
@@ -135,10 +153,14 @@ public class DatabaseHandler {
             return task;
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            closeStatement(stmt);
+            closeConnection(connection);
         }
         return null;
     }
-    private DatabaseRequestStatus executeStatement(String sql){
+
+    private DatabaseRequestStatus executeStatement(String sql) {
         Connection connection = getConnection();
         Statement stmt = null;
         try {
@@ -148,6 +170,29 @@ public class DatabaseHandler {
         } catch (SQLException e) {
             e.printStackTrace();
             return DatabaseRequestStatus.ERROR;
+        } finally {
+            closeStatement(stmt);
+            closeConnection(connection);
+        }
+    }
+
+    private void closeConnection(Connection connection) {
+        try {
+            if (connection != null) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void closeStatement(Statement statement) {
+        try {
+            if (statement != null) {
+                statement.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

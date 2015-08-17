@@ -2,6 +2,7 @@ package webService;
 
 import model.DatabaseHandler;
 import model.DatabaseRequestStatus;
+import taskExecution.TaskExecutionHelper;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -12,7 +13,7 @@ import java.io.IOException;
 /**
  * Created by Paul on 13/08/15.
  */
-public class TaskDeletionServlet extends HttpServlet{
+public class TaskDeletionServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String id = request.getParameter("id");
@@ -26,20 +27,20 @@ public class TaskDeletionServlet extends HttpServlet{
         if (idInt == -1)
             return;
         DatabaseRequestStatus status = DatabaseHandler.getInstance().deleteTask(idInt);
-
-        if (status == DatabaseRequestStatus.ERROR){
+        TaskExecutionHelper.getInstance().stopTask(idInt);
+        if (status == DatabaseRequestStatus.ERROR) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().println("{\"error\":\"database error\"}");
-        }
-        else{
+        } else {
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().println("{\"success\":\"OK\"}");
         }
     }
+
     private int stringToInt(String param) {
         try {
             return Integer.valueOf(param);
-        } catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return -1;
         }
     }

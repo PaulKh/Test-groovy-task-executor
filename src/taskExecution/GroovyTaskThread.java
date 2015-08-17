@@ -1,6 +1,8 @@
 package taskExecution;
 
 import model.DatabaseHandler;
+import model.Task;
+import model.TaskStatus;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -15,22 +17,15 @@ import java.util.List;
 /**
  * Created by Paul on 14/08/15.
  */
-public class GroovyTaskThread implements Runnable{
-    private String script;
-    public GroovyTaskThread(String script) {
-        this.script = script;
-    }
-    public void addTask(String script){
-        try {
-            invokeScript("groovy", script, System.getenv("GROOVY_HOME") + "/lib");
-        } catch (ScriptException e) {
-            e.printStackTrace();
-        }
+public class GroovyTaskThread implements Runnable {
+
+    private Task task;
+
+    public GroovyTaskThread(Task task) {
+        this.task = task;
     }
 
-
-    private void invokeScript(String name,
-                                     String script, String... directories)
+    private void invokeScript(String name, String... directories)
             throws ScriptException {
         ClassLoader loader = new URLClassLoader(
                 buildClassPath(directories));
@@ -45,8 +40,12 @@ public class GroovyTaskThread implements Runnable{
                 throw new IllegalStateException("No engine for "
                         + name);
             }
-            Object result = engine.eval(script);
-            result.toString();
+            Object result = engine.eval(task.getScript());
+
+            if (result != null)
+                task.setResult(result.toString());
+            task.setTaskStatus(TaskStatus.SUCCEED);
+            DatabaseHandler.getInstance().updateTask(task);
         } finally {
             Thread.currentThread().setContextClassLoader(
                     oldLoader);
@@ -73,8 +72,16 @@ public class GroovyTaskThread implements Runnable{
         }
     }
 
+    public Task getTask() {
+        return task;
+    }
+
     @Override
     public void run() {
-        addTask(script);
+        try {
+            invokeScript("groovy", System.getenv("GROOVY_HOME") + "/lib");
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
     }
 }

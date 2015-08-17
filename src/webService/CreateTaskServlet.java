@@ -3,6 +3,7 @@ package webService;
 import com.google.gson.Gson;
 import model.DatabaseHandler;
 import model.Task;
+import taskExecution.TaskExecutionHelper;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -20,11 +21,16 @@ public class CreateTaskServlet extends HttpServlet {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
         Task task = new Gson().fromJson(readPostData(request), Task.class);
-        if (task.getScript() != null){
-            DatabaseHandler.getInstance().addNewTask(task.getScript());
+        if (task.getScript() != null) {
+            int id = DatabaseHandler.getInstance().addNewTask(task.getScript());
+            task.setIdentifier(id);
+            TaskExecutionHelper.getInstance().addTask(task);
+            response.getWriter().println("{\"success\":\"OK\"}");
+        } else {
+            response.getWriter().println("{\"error\":\"Wrong format\"}");
         }
-        response.getWriter().println("{\"success\":\"OK\"}");
     }
+
     private String readPostData(HttpServletRequest request) {
         StringBuilder buffer = new StringBuilder();
         BufferedReader reader = null;

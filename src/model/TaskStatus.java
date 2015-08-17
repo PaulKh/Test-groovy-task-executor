@@ -5,25 +5,35 @@ package model;
  */
 public enum TaskStatus {
     EXECUTING,
+    SUCCEED,
     FAILED,
-    SUCCEED;
-    public static TaskStatus getStatusByInt(int status){
-        switch (status){
+    NOTFOUND;
+
+    public static TaskStatus getStatusByInt(int status) {
+        switch (status) {
             case 0:
                 return EXECUTING;
             case 1:
+                return SUCCEED;
+            case 2:
                 return FAILED;
-            default: return SUCCEED;
+            default:
+            case 3:
+                return NOTFOUND;
         }
     }
+
     @Override
-    public String toString(){
-        switch (this){
+    public String toString() {
+        switch (this) {
             case EXECUTING:
                 return "Executing";
+            case SUCCEED:
+                return "Succeed";
             case FAILED:
                 return "Failed";
-            default: return "Succeed";
+            default:
+                return "Task not found";
         }
     }
 }
