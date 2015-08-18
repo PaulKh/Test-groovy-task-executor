@@ -44,15 +44,17 @@ GET request http://hostname:8080/tasks/result?id=5
 
 ### Post new groovy script
 
-POST request http://hostname:8080/tasks/add
+POST request http://hostname:8080/tasks
 ```
 {
     "script": "class Person {\n    String name\n}\ndef p = new Person(name: 'Norman')\n sleep(10000) \np.getName()"
 }
 ```
 
+Response: `{"success":"OK","identifier":"10"}`
+
 ### Delete task from the list, and stop the execution if still in progress
 
-POST request http://hostname:8080/tasks/delete?id=1
+DELETE request http://hostname:8080/tasks?id=1
 
 `{"success":"OK"}`
