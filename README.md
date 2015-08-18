@@ -51,7 +51,7 @@ POST request http://hostname:8080/tasks
 }
 ```
 
-Response: `{"success":"OK","identifier":"10"}`
+Response: `{"status":"Task received","identifier":"10"}`
 
 ### Delete task from the list, and stop the execution if still in progress
 
