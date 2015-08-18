@@ -20,6 +20,7 @@ proguard/
 *.iml
 *.ipr
 *.iws
+*.db
 .idea/
 
 .DS_Store

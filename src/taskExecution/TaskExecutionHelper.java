@@ -58,10 +58,15 @@ public class TaskExecutionHelper implements ExecutionTaskCallback {
         } else {
             switch (taskFromDB.getTaskStatus()) {
                 case EXECUTING: {
-                    GroovyTaskThread executingThread = tasks.get(identifier).getGroovyThread();
-                    if (executingThread == null) {
+                    GroovyFutureTask futureTask = tasks.get(identifier);
+                    if (futureTask == null)
                         returnTask.setTaskStatus(TaskStatus.FAILED);
-                    } else returnTask.setTaskStatus(TaskStatus.EXECUTING);
+                    else {
+                        GroovyTaskThread executingThread = futureTask.getGroovyThread();
+                        if (executingThread == null) {
+                            returnTask.setTaskStatus(TaskStatus.FAILED);
+                        } else returnTask.setTaskStatus(TaskStatus.EXECUTING);
+                    }
                 }
                 break;
                 default:
