@@ -4,7 +4,6 @@ import model.DatabaseHandler;
 import model.Task;
 import model.TaskStatus;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -30,12 +29,14 @@ public class TaskExecutionHelper implements ExecutionTaskCallback {
         }
         return local;
     }
+
     //Init thread pool
     public TaskExecutionHelper() {
         RejectedExecutionHandlerImpl rejectionHandler = new RejectedExecutionHandlerImpl();
         ThreadFactory threadFactory = Executors.defaultThreadFactory();
-        executorPool = new ThreadPoolExecutor(2, 4, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(10), threadFactory, rejectionHandler);
+        executorPool = new ThreadPoolExecutor(2, 4, 10, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(200), threadFactory, rejectionHandler);
     }
+
     //put task in the list and in the queue of the pool
     public void addTask(Task task) {
         GroovyTaskThread taskThread = new GroovyTaskThread(this, task);

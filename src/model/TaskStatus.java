@@ -10,17 +10,7 @@ public enum TaskStatus {
     NOTFOUND;
 
     public static TaskStatus getStatusByInt(int status) {
-        switch (status) {
-            case 0:
-                return EXECUTING;
-            case 1:
-                return SUCCEED;
-            case 2:
-                return FAILED;
-            default:
-            case 3:
-                return NOTFOUND;
-        }
+        return TaskStatus.values()[status];
     }
 
     @Override

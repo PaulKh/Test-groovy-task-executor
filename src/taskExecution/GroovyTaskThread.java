@@ -49,7 +49,7 @@ public class GroovyTaskThread implements Runnable {
                 task.setResult(result.toString());
             task.setTaskStatus(TaskStatus.SUCCEED);
             DatabaseHandler.getInstance().updateTask(task);
-            if (callback != null){
+            if (callback != null) {
                 callback.taskExecuted(task);
             }
         } finally {
@@ -57,6 +57,7 @@ public class GroovyTaskThread implements Runnable {
                     oldLoader);
         }
     }
+
     //support method for script running
     private URL[] buildClassPath(String... directories) {
         try {

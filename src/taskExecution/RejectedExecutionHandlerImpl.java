@@ -12,7 +12,7 @@ public class RejectedExecutionHandlerImpl implements RejectedExecutionHandler {
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
 
-        if (r instanceof GroovyFutureTask){
+        if (r instanceof GroovyFutureTask) {
             GroovyTaskThread taskThread = ((GroovyFutureTask) r).getGroovyThread();
             taskThread.getTask().setTaskStatus(TaskStatus.FAILED);
             DatabaseHandler.getInstance().updateTask(taskThread.getTask());

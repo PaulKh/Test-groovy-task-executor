@@ -22,9 +22,14 @@ public class GetResultServlet extends HttpServlet {
             response.getWriter().println("{\"error\":\"Specify id as param\"}");
             return;
         }
-        int idInt = stringToInt(id);
-        if (idInt == -1)
+        int idInt;
+        try {
+            idInt = Integer.valueOf(id);
+        } catch (NumberFormatException e) {
+            response.setStatus(400);
+            response.getWriter().println("{\"error\":\"Wrong format of id\"}");
             return;
+        }
         Task task = TaskExecutionHelper.getInstance().getTaskStatusAndResult(idInt);
 
         if (task == null) {
@@ -40,13 +45,5 @@ public class GetResultServlet extends HttpServlet {
         }
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().println();
-    }
-
-    private int stringToInt(String param) {
-        try {
-            return Integer.valueOf(param);
-        } catch (NumberFormatException e) {
-            return -1;
-        }
     }
 }
