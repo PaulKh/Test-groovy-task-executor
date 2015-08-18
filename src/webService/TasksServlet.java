@@ -65,7 +65,7 @@ public class TasksServlet extends HttpServlet {
             int id = DatabaseHandler.getInstance().addNewTask(task.getScript());
             task.setIdentifier(id);
             TaskExecutionHelper.getInstance().addTask(task);
-            response.getWriter().println("{\"success\":\"OK\"," +
+            response.getWriter().println("{\"status\":\"Task received\"," +
                     "\"identifier\":\"" + id + "\"}");
         } else {
             response.getWriter().println("{\"error\":\"Wrong format\"}");

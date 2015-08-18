@@ -52,7 +52,15 @@ public class GroovyTaskThread implements Runnable {
             if (callback != null) {
                 callback.taskExecuted(task);
             }
-        } finally {
+        }
+        catch (Exception exception){
+            task.setTaskStatus(TaskStatus.FAILED);
+            DatabaseHandler.getInstance().updateTask(task);
+            if (callback != null) {
+                callback.taskExecuted(task);
+            }
+        }
+        finally {
             Thread.currentThread().setContextClassLoader(
                     oldLoader);
         }

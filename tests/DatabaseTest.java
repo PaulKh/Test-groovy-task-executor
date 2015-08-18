@@ -20,5 +20,4 @@ public class DatabaseTest extends TestCase {
         int sizeAfter = DatabaseHandler.getInstance().getAll().size();
         assertEquals(sizeBefore + 1, sizeAfter);
     }
-
 }
